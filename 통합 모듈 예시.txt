@@ -1,0 +1,126 @@
+' =======================
+' Module: MotorControl
+' =======================
+' 이 모듈은 모터의 제어를 담당합니다. 모터의 속도를 설정하고 방향을 전환하며 모터를 정지시키는 기능을 제공합니다.
+Module MotorControl
+
+    ' 모터 속도와 방향을 저장하는 변수 선언
+    Dim MotorSpeed As Integer
+    Dim MotorDirection As String
+
+    ' 모터 초기화 함수: 속도는 0, 방향은 "Forward"로 설정
+    Sub InitMotor()
+        MotorSpeed = 0
+        MotorDirection = "Forward"
+        Debug.Print "Motor initialized with speed 0 and direction Forward"
+    End Sub
+
+    ' 모터 속도를 설정하는 함수
+    Sub SetMotorSpeed(speed As Integer)
+        If speed >= 0 And speed <= 100 Then
+            MotorSpeed = speed
+            Debug.Print "Motor speed set to " & MotorSpeed
+        Else
+            Debug.Print "Invalid speed value. Must be between 0 and 100."
+        End If
+    End Sub
+
+    ' 모터의 방향을 변경하는 함수
+    Sub ChangeDirection(direction As String)
+        If direction = "Forward" Or direction = "Reverse" Then
+            MotorDirection = direction
+            Debug.Print "Motor direction set to " & MotorDirection
+        Else
+            Debug.Print "Invalid direction. Use 'Forward' or 'Reverse'."
+        End If
+    End Sub
+
+    ' 모터를 정지시키는 함수
+    Sub StopMotor()
+        MotorSpeed = 0
+        Debug.Print "Motor stopped."
+    End Sub
+
+End Module
+
+
+' =======================
+' Module: SensorManagement
+' =======================
+' 이 모듈은 센서 관리 기능을 제공합니다. 센서 초기화, 센서 값 읽기, 그리고 센서 보정을 할 수 있습니다.
+Module SensorManagement
+
+    ' 센서 값을 저장하는 변수 선언
+    Dim SensorValue As Integer
+
+    ' 센서 초기화 함수
+    Sub InitSensor()
+        SensorValue = 0
+        Debug.Print "Sensor initialized."
+    End Sub
+
+    ' 센서 값을 읽는 함수
+    Function ReadSensor() As Integer
+        ' 센서 값을 임의로 생성하여 읽음 (0~100 범위)
+        SensorValue = Rnd() * 100
+        Debug.Print "Sensor value read: " & SensorValue
+        ReadSensor = SensorValue
+    End Function
+
+    ' 센서 보정 함수
+    Sub CalibrateSensor()
+        Debug.Print "Calibrating sensor..."
+        SensorValue = 50 ' 보정 후 센서 값을 중간 값으로 설정
+        Debug.Print "Sensor calibrated to value: " & SensorValue
+    End Sub
+
+End Module
+
+
+' =======================
+' Module: UserInterface
+' =======================
+' 이 모듈은 사용자 인터페이스를 담당합니다. 사용자에게 메시지를 출력하고, 모터와 센서 상태를 표시하는 기능을 제공합니다.
+Module UserInterface
+
+    ' 환영 메시지를 표시하는 함수
+    Sub DisplayWelcome()
+        Debug.Print "Welcome to the Motor and Sensor Control System"
+    End Sub
+
+    ' 모터 상태를 표시하는 함수
+    Sub DisplayMotorStatus(speed As Integer, direction As String)
+        Debug.Print "Current Motor Speed: " & speed
+        Debug.Print "Current Motor Direction: " & direction
+    End Sub
+
+    ' 센서 상태를 표시하는 함수
+    Sub DisplaySensorStatus(sensorValue As Integer)
+        Debug.Print "Current Sensor Value: " & sensorValue
+    End Sub
+
+End Module
+
+
+' =======================
+' Module: ErrorHandling
+' =======================
+' 이 모듈은 오류 처리 기능을 제공합니다. 오류 메시지를 기록하고, 잘못된 입력에 대한 오류를 처리하며, 시스템 오류가 발생했을 때의 메시지를 출력합니다.
+Module ErrorHandling
+
+    ' 오류 메시지를 기록하는 함수
+    Sub LogError(errorMessage As String)
+        Debug.Print "Error: " & errorMessage
+    End Sub
+
+    ' 잘못된 입력을 처리하는 함수
+    Sub HandleInvalidInput(inputName As String)
+        LogError("Invalid input for " & inputName)
+    End Sub
+
+    ' 일반적인 시스템 오류 처리 함수
+    Sub SystemError()
+        Debug.Print "A system error has occurred. Please restart the system."
+    End Sub
+
+End Module

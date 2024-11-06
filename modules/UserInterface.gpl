@@ -1,0 +1,23 @@
+' =======================
+' Module: UserInterface
+' =======================
+' 이 모듈은 사용자 인터페이스를 담당합니다. 사용자에게 메시지를 출력하고, 모터와 센서 상태를 표시하는 기능을 제공합니다.
+Module UserInterface
+
+    ' 환영 메시지를 표시하는 함수
+    Sub DisplayWelcome()
+        Debug.Print "Welcome to the Motor and Sensor Control System"
+    End Sub
+
+    ' 모터 상태를 표시하는 함수
+    Sub DisplayMotorStatus(speed As Integer, direction As String)
+        Debug.Print "Current Motor Speed: " & speed
+        Debug.Print "Current Motor Direction: " & direction
+    End Sub
+
+    ' 센서 상태를 표시하는 함수
+    Sub DisplaySensorStatus(sensorValue As Integer)
+        Debug.Print "Current Sensor Value: " & sensorValue
+    End Sub
+
+End Module
