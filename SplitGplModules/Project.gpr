@@ -1,9 +1,0 @@
-'11/06/2024, 12:14:59 PM
-ProjectBegin
-ProjectName="SplitGplModules"
-ProjectStart="MAIN"
-ProjectSource="MotorControl.gpl"
-ProjectSource="SensorManagement.gpl"
-ProjectSource="UserInterface.gpl"
-ProjectSource="ErrorHandling.gpl"
-ProjectEnd
