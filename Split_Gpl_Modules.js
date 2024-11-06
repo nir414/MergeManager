@@ -12,10 +12,10 @@ const rl = readline.createInterface({
 
 rl.question('어떤 작업을 수행하시겠습니까? (1: 통합 코드 분류, 2: 모듈 통합): ', (answer) => {
 	if (answer === '1') {
-		// 통합 코드 분류 작업 실행
+		console.log('통합 코드 분류 작업을 시작합니다.');
 		splitModules();
 	} else if (answer === '2') {
-		// 모듈 통합 작업 실행
+		console.log('모듈 통합 작업을 시작합니다.');
 		mergeModules();
 	} else {
 		console.log('잘못된 입력입니다. 프로그램을 종료합니다.');
@@ -145,13 +145,14 @@ function mergeModules() {
 			}
 		});
 
-		// // Project.gpr 파일 복사
-		// fs.copyFile(projectFilePath, mergedProjectFilePath, (copyErr) => {
-			// if (copyErr) {
-				// console.error('Project.gpr 파일을 복사하는 도중 오류가 발생했습니다:', copyErr);
-			// } else {
-				// console.log('Project.gpr 파일이 성공적으로 복사되었습니다.');
-			// }
-		// });
+		// Project.gpr 파일 생성 (항상 동일한 형식 사용, 시간만 변경)
+		const fixedProjectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nProjectBegin\nProjectName="MergedModules"\nProjectStart="MAIN"\nProjectSource="MergeCode.gpl"\nProjectEnd\n`;
+		fs.writeFile(mergedProjectFilePath, fixedProjectFileContent, 'utf8', (writeErr) => {
+			if (writeErr) {
+				console.error('Project.gpr 파일을 생성하는 도중 오류가 발생했습니다:', writeErr);
+			} else {
+				console.log('Project.gpr 파일이 성공적으로 생성되었습니다.');
+			}
+		});
 	});
 }
