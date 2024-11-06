@@ -124,7 +124,8 @@ function mergeModules() {
 
 		for (const line of projectLines) {
 			if (line.startsWith('ProjectSource=')) {
-				const moduleFileName = line.split('=')[1].replace(/"/g, '');
+				// const moduleFileName = line.split('=')[1].replace(/"/g, '');
+				const moduleFileName = line.split('=')[1].replace(/"|[\r\n]/g, '');
 				const moduleFilePath = path.join(outputDirectory, moduleFileName);
 				try {
 					const moduleData = fs.readFileSync(moduleFilePath, 'utf8');
