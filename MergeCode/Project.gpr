@@ -3,7 +3,4 @@ ProjectBegin
 ProjectName="SplitGplModules"
 ProjectStart="MAIN"
 ProjectSource="MotorControl.gpl"
-ProjectSource="SensorManagement.gpl"
-ProjectSource="UserInterface.gpl"
-ProjectSource="ErrorHandling.gpl"
 ProjectEnd
