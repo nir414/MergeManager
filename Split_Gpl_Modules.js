@@ -144,13 +144,13 @@ function mergeModules() {
 			}
 		});
 
-		// Project.gpr 파일 복사
-		fs.copyFile(projectFilePath, mergedProjectFilePath, (copyErr) => {
-			if (copyErr) {
-				console.error('Project.gpr 파일을 복사하는 도중 오류가 발생했습니다:', copyErr);
-			} else {
-				console.log('Project.gpr 파일이 성공적으로 복사되었습니다.');
-			}
-		});
+		// // Project.gpr 파일 복사
+		// fs.copyFile(projectFilePath, mergedProjectFilePath, (copyErr) => {
+			// if (copyErr) {
+				// console.error('Project.gpr 파일을 복사하는 도중 오류가 발생했습니다:', copyErr);
+			// } else {
+				// console.log('Project.gpr 파일이 성공적으로 복사되었습니다.');
+			// }
+		// });
 	});
 }
