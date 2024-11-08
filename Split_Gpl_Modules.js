@@ -21,7 +21,6 @@ rl.question('어떤 작업을 수행하시겠습니까? (1: 통합 코드 분류
 		console.log('잘못된 입력입니다. 프로그램을 종료합니다.');
 	}
 	waitForExit();
-	// rl.close();
 });
 
 // 프로그램 종료 대기 함수
@@ -41,10 +40,7 @@ async function splitModules() {
 
 	// 출력 폴더 생성 (이미 존재하면 무시)
 	try {
-		// 출력 폴더가 존재하지 않으면 새로 생성합니다.
-		// if (!fs.existsSync(outputDirectory)) {
 		if (!await fs.access(outputDirectory).then(() => true).catch(() => false)) {
-			// fs.mkdirSync(outputDirectory); // 폴더 생성
 			await fs.mkdir(outputDirectory); // 폴더 생성
 		}
 	} catch (err) {
@@ -55,12 +51,9 @@ async function splitModules() {
 	// 파일 읽기 및 모듈 분리
 	try {
 		const data = await fs.readFile(inputFilePath, 'utf8');
-
-		// 주석 포함 모듈 찾기 정규 표현식 정의
 		const moduleRegex = /((?:'[^\n]*\n)+)?(Module \w+[\s\S]*?End Module)/g;
-		// Module을 찾는 정규 표현식 정의 = /Module (\w+)([\s\S]*?)End Module/g;
+
 		let match;
-		// 프로젝트 파일 생성 시작
 		let projectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nProjectBegin\nProjectName="MergeCode"\nProjectStart="MAIN"\nProjectSource="__init__IOConfig__.gpl"\nProjectSource="__init__RobotConfig__.gpl"\n`;
 
 		// 모듈별로 파일을 나누기
@@ -122,13 +115,11 @@ async function mergeModules() {
 	// Project.gpr 파일 읽기 및 모듈 통합
 	try {
 		const projectData = await fs.readFile(projectFilePath, 'utf8');
-		// MergeCode.gpl 파일 생성 시작
 		let mergedFileContent = '';
 		const projectLines = projectData.split('\n');
 
 		for (const line of projectLines) {
 			if (line.startsWith('ProjectSource=')) {
-				// const moduleFileName = line.split('=')[1].replace(/"/g, '');
 				const moduleFileName = line.split('=')[1].replace(/"|[\r\n]/g, '');
 				const moduleFilePath = path.join(outputDirectory, moduleFileName);
 				try {
