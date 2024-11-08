@@ -61,18 +61,19 @@ async function splitModules() {
 		// Module을 찾는 정규 표현식 정의 = /Module (\w+)([\s\S]*?)End Module/g;
 		let match;
 		// 프로젝트 파일 생성 시작
-		let projectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nProjectBegin\nProjectName="SplitGplModules"\nProjectStart="MAIN"\n`;
+		let projectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nProjectBegin\nProjectName="MergeCode"\nProjectStart="MAIN"\nProjectSource="__init__IOConfig__.gpl"\nProjectSource="__init__RobotConfig__.gpl"\n`;
 
 		// 모듈별로 파일을 나누기
 		while ((match = moduleRegex.exec(data)) !== null) {
 			const comments = match[1] ? match[1] : '';
 			const moduleContent = match[2];
+			const moduleContentWithNewline = moduleContent.endsWith('\n\n') ? moduleContent : moduleContent + '\n\n';
 
 			// 모듈 이름 추출
 			const moduleNameMatch = moduleContent.match(/Module (\w+)/);
 			const moduleName = moduleNameMatch ? moduleNameMatch[1] : 'UnknownModule';
 			
-			const fullContent = comments + moduleContent;
+			const fullContent = comments + moduleContentWithNewline;
 			
 			// 모듈별 파일 생성
 			const outputFilePath = path.join(outputDirectory, `${moduleName}.gpl`);
@@ -134,7 +135,11 @@ async function mergeModules() {
 					const moduleData = await fs.readFile(moduleFilePath, 'utf8');
 					mergedFileContent += moduleData + '\n';
 				} catch (readErr) {
-					console.error(`${moduleFileName} 모듈 파일을 읽는 도중 오류가 발생했습니다:`, readErr);
+					if (moduleFileName == '__init__IOConfig__.gpl' || moduleFileName == '__init__RobotConfig__.gpl') {
+						console.warn(`${moduleFileName} 모듈 파일을 찾을 수 없어 무시합니다.`);
+					} else {
+						console.error(`${moduleFileName} 모듈 파일을 읽는 도중 오류가 발생했습니다:`, readErr);
+					}
 				}
 			}
 		}
@@ -148,7 +153,7 @@ async function mergeModules() {
 		}
 
 		// Project.gpr 파일 생성 (항상 동일한 형식 사용, 시간만 변경)
-		const fixedProjectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nProjectBegin\nProjectName="MergedModules"\nProjectStart="MAIN"\nProjectSource="MergeCode.gpl"\nProjectEnd\n`;
+		const fixedProjectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nProjectBegin\nProjectName="MergeCode"\nProjectStart="MAIN"\nProjectSource="MergeCode.gpl"\nProjectSource="__init__IOConfig__.gpl"\nProjectSource="__init__RobotConfig__.gpl"\nProjectEnd\n`;
 		try {
 			await fs.writeFile(mergedProjectFilePath, fixedProjectFileContent, 'utf8');
 			console.log('Project.gpr 파일이 성공적으로 생성되었습니다.');
