@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "bin": "Split_Gpl_Modules.js",
   "pkg": {
-		"scripts": [
+    "scripts": [
       "Split_Gpl_Modules.js"
     ]
+  },
+  "dependencies": {
+    "chalk": "^4.1.2"
   }
 }
