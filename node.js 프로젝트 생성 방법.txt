@@ -1,0 +1,45 @@
+node.js 프로젝트 생성 방법
+
+프로젝트 폴더 생성
+원하는 위치에서 CMD창 열고
+mkdir poject_name
+cd poject_name
+npm init -y
+
+chalk 설치(텍스트의 스타일)
+npm install chalk
+npm install chalk@4
+
+Electron 설치(GUI 생성 도구)
+npm install electron --save-dev
+
+Puppeteer 설치(웹 다운 도구)
+npm install puppeteer
+
+======================
+npm init -y
+npm install chalk
+npm install electron --save-dev
+npm install puppeteer
+
+======================
+
+일반 실행
+node poject_name
+Electron 실행
+npm start
+
+
+mkdir javaScript
+cd javaScript
+
+
+빌드 방법
+(관리자 권한 필요)
+pkg . --targets node18-win-x64
+pkg . --targets node16-win-x64
+pkg . --targets node18-win-x64 --no-bytecode
+pkg . --targets node16-win-x64 --no-bytecode
+
+아이콘 지정
+pkg . --targets node18-win-x64 --output output_filename --icon icon.ico
