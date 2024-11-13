@@ -5,21 +5,21 @@ const path = require('path'); // 파일 경로 모듈 불러오기
 const readline = require('readline'); // 사용자 입력을 받기 위한 모듈
 const chalk = require('chalk'); // 터미널 텍스트 스타일링 모듈
 
-// 사용자에게 작업을 선택하도록 요청
+// 콘솔 인터페이스 설정
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout
 });
 
-// 사용자에게 메뉴 제공
-function showMenu() {
+// 프로그램 시작 메뉴 출력 및 작업 선택 함수
+function displayMenu() {
 	console.log(chalk.blue.bold('\n======================================'));
 	console.log(chalk.green('Brooks Automation GPL 코드 관리 시스템'));
 	console.log(chalk.blue.bold('======================================'));
 	console.log(chalk.yellow('1: 통합 코드 분류'));
 	console.log(chalk.yellow('2: 모듈 통합'));
 	console.log(chalk.red('0: 종료'));
-	console.log(chalk.blue.bold('============================='));
+	console.log(chalk.blue.bold('=============================\n'));
 	rl.question(chalk.cyan('어떤 작업을 수행하시겠습니까?\n(숫자를 입력하세요): '), async (answer) => {
 		if (answer === '1') {
 			console.log(chalk.green('통합 코드 분류 작업을 시작합니다.'));
@@ -29,32 +29,64 @@ function showMenu() {
 			await mergeModules();
 		} else if (answer === '0') {
 			console.log(chalk.red('프로그램을 종료합니다.'));
-			waitForExit();
+			exitProgram();
 			return;
 		} else {
 			console.log(chalk.red('잘못된 입력입니다. 다시 시도해주세요.'));
-			showMenu();
+			displayMenu();
 			return;
 		}
-		showMenu(); // 종료 명령을 받을 때까지 반복
+		displayMenu();
 		// waitForExit();
 	});
 }
 
-showMenu();
+displayMenu();
 
 // 프로그램 종료 대기 함수
-function waitForExit() {
+function exitProgram() {
 	rl.question(chalk.cyan('아무 키나 눌러 프로그램을 종료하십시오.'), () => {
 		rl.close();
 		process.exit(0);
 	});
 }
 
+// 현재 디렉토리에서 .gpl 파일 목록 검색 함수
+async function listGplFiles() {
+	const files = await fs.readdir(__dirname); // 현재 디렉토리에서 파일 목록 가져오기
+	return files.filter(file => file.endsWith('.gpl')); // .gpl 파일만 필터링하여 반환
+}
+
+// 파일 선택을 위한 사용자 프롬프트
+async function promptFileSelection() {
+	const gplFiles = await listGplFiles();
+
+	if (gplFiles.length === 0) {
+		console.log(chalk.red('.gpl 파일이 현재 디렉토리에 없습니다.'));
+		process.exit(1);
+	}
+
+	console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
+	gplFiles.forEach((file, index) => {
+		console.log(chalk.yellow(`${index + 1}: ${file}`));
+	});
+
+	return new Promise((resolve) => {
+		rl.question(chalk.cyan('\n사용할 파일 번호를 선택하세요: '), (answer) => {
+			const index = parseInt(answer) - 1;
+			if (isNaN(index) || index < 0 || index >= gplFiles.length) {
+				console.log(chalk.red('유효하지 않은 선택입니다.'));
+				process.exit(1);
+			}
+			resolve(gplFiles[index]);
+		});
+	});
+}
+
 // 통합 코드를 모듈별로 분류하는 함수
 async function splitModules() {
-	// 파일 경로 설정 (상대 경로 사용)
-	const inputFilePath = './MergeCode.gpl';
+	// const inputFilePath = './MergeCode.gpl';
+	const inputFilePath = await promptFileSelection();
 	const outputDirectory = './SplitGplModules';
 	const projectFilePath = './SplitGplModules/Project.gpr';
 
@@ -78,7 +110,8 @@ async function splitModules() {
 
 		// 모듈별로 파일을 나누기
 		while ((match = moduleRegex.exec(data)) !== null) {
-			const comments = match[1] ? match[1] : '';
+			// const comments = match[1] ? match[1] : '';
+			const comments = match[1] || '';
 			const moduleContent = match[2];
 			const fullContent = comments + moduleContent;
 			
@@ -102,7 +135,7 @@ async function splitModules() {
 		// 프로젝트 파일 생성
 		try {
 			await fs.writeFile(projectFilePath, projectFileContent, 'utf8');
-			console.log(chalk.green('프로젝트 파일이 성공적으로 생성되었습니다.'));
+			console.log(chalk.blue('프로젝트 파일이 성공적으로 생성되었습니다.'));
 		} catch (writeErr) {
 			console.error(chalk.red('프로젝트 파일을 생성하는 도중 오류가 발생했습니다:'), writeErr);
 		}
@@ -111,8 +144,7 @@ async function splitModules() {
 	}
 }
 
-
-// 나눠진 모듈을 통합하여 MergeCode.gpl 파일과 Project.gpr 파일을 생성하는 함수
+// 분리된 모듈 파일을 하나의 MergeCode 파일로 통합하는 함수
 async function mergeModules() {
 	const outputDirectory = './SplitGplModules';
 	const projectFilePath = './SplitGplModules/Project.gpr';
@@ -136,6 +168,7 @@ async function mergeModules() {
 		let mergedFileContent = '';
 		const projectLines = projectData.split(/\r?\n/);
 
+		// 각 모듈 파일을 읽고 병합
 		for (const line of projectLines) {
 			if (line.startsWith('ProjectSource=')) {
 				const moduleFileName = line.split('=')[1].replace(/"|[\r\n]/g, '');
@@ -165,7 +198,7 @@ async function mergeModules() {
 		const fixedProjectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\r\nProjectBegin\r\nProjectName="MergeCode"\r\nProjectStart="MAIN"\r\nProjectSource="MergeCode.gpl"\r\nProjectSource="__init__IOConfig__.gpl"\r\nProjectSource="__init__RobotConfig__.gpl"\r\nProjectEnd\r\n`;
 		try {
 			await fs.writeFile(mergedProjectFilePath, fixedProjectFileContent, 'utf8');
-			console.log(chalk.green('Project.gpr 파일이 성공적으로 생성되었습니다.'));
+			console.log(chalk.blue('Project.gpr 파일이 성공적으로 생성되었습니다.'));
 		} catch (writeErr) {
 			console.error(chalk.red('Project.gpr 파일을 생성하는 도중 오류가 발생했습니다:'), writeErr);
 		}
