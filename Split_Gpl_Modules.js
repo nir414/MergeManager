@@ -88,8 +88,13 @@ async function splitModules() {
 	// const inputFilePath = './MergeCode.gpl';
 	const inputFilePath = await promptFileSelection();
 	const outputDirectory = './SplitGplModules';
-	const projectFilePath = './SplitGplModules/Project.gpr';
+	// const projectFilePath = './SplitGplModules/Project.gpr';
+	const projectFilePath = path.join(outputDirectory, 'Project.gpr');
 
+
+	// ProjectFileManager 인스턴스 생성 및 파일 로드
+	const projectManager = new ProjectFileManager(projectFilePath);
+	await projectManager.loadProjectFile();
 	// 출력 폴더 생성 (이미 존재하면 무시)
 	try {
 		if (!await fs.access(outputDirectory).then(() => true).catch(() => false)) {
@@ -106,8 +111,7 @@ async function splitModules() {
 		const moduleRegex = /((?:'[^\n]*\n)+)?(Module \w+[\s\S]*?End Module)/g;
 
 		let match;
-		let projectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\r\nProjectBegin\r\nProjectName="MergeCode"\r\nProjectStart="MAIN"\r\nProjectSource="__init__IOConfig__.gpl"\r\nProjectSource="__init__RobotConfig__.gpl"\r\n`;
-
+		
 		// 모듈별로 파일을 나누기
 		while ((match = moduleRegex.exec(data)) !== null) {
 			// const comments = match[1] ? match[1] : '';
@@ -118,27 +122,19 @@ async function splitModules() {
 			// 모듈 이름 추출
 			const moduleNameMatch = moduleContent.match(/Module (\w+)/);
 			const moduleName = moduleNameMatch ? moduleNameMatch[1] : 'UnknownModule';
+			const moduleFileName = `${moduleName}.gpl`;
 			
 			// 모듈별 파일 생성
-			const outputFilePath = path.join(outputDirectory, `${moduleName}.gpl`);
+			const outputFilePath = path.join(outputDirectory, moduleFileName);
 			try {
 				await fs.writeFile(outputFilePath, fullContent.replace(/\r?\n/g, '\r\n') + '\r\n\r\n', 'utf8');
 				console.log(chalk.green(`${moduleName} 모듈 파일이 성공적으로 생성되었습니다.`));
-				projectFileContent += `ProjectSource="${moduleName}.gpl"\r\n`;
+				projectManager.addModule(moduleFileName);
 			} catch (writeErr) {
 				console.error(chalk.red(`${moduleName} 모듈 파일을 생성하는 도중 오류가 발생했습니다:`), writeErr);
 			}
 		}
-		// 프로젝트 파일 종료 부분 추가
-		projectFileContent += 'ProjectEnd\r\n';
-
-		// 프로젝트 파일 생성
-		try {
-			await fs.writeFile(projectFilePath, projectFileContent, 'utf8');
-			console.log(chalk.blue('프로젝트 파일이 성공적으로 생성되었습니다.'));
-		} catch (writeErr) {
-			console.error(chalk.red('프로젝트 파일을 생성하는 도중 오류가 발생했습니다:'), writeErr);
-		}
+		await projectManager.saveProjectFile();
 	} catch (err) {
 		console.error(chalk.red('파일을 읽는 도중 오류가 발생했습니다:'), err);
 	}
@@ -204,5 +200,69 @@ async function mergeModules() {
 		}
 	} catch (err) {
 		console.error(chalk.red('프로젝트 파일을 읽는 도중 오류가 발생했습니다:'), err);
+	}
+}
+
+
+class ProjectFileManager {
+	constructor(filePath, projectName = 'MergeCode', projectStart = 'MAIN') {
+		this.filePath = filePath;
+		this.projectName = projectName;
+		this.projectStart = projectStart;
+		this.modules = new Set();
+	}
+
+	getCurrentTimestamp() {
+		return new Date().toLocaleString('en-US', {
+			month: '2-digit',
+			day: '2-digit',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: true
+		});
+	}
+
+	async loadProjectFile() {
+		try {
+			const data = await fs.readFile(this.filePath, 'utf8');
+			const moduleMatches = data.match(/ProjectSource="(.+?\.gpl)"/g) || [];
+			moduleMatches.forEach(match => {
+				const moduleName = match.match(/ProjectSource="(.+?)"/)[1];
+				this.modules.add(moduleName);
+			});
+		} catch (err) {
+			if (err.code !== 'ENOENT') {
+				console.error(chalk.red('Project.gpr 파일을 읽는 도중 오류가 발생했습니다:'), err);
+				throw err;
+			}
+			console.log(chalk.yellow('Project.gpr 파일이 없으므로 새로 생성됩니다.'));
+		}
+	}
+
+	addModule(moduleFileName) {
+		if (!this.modules.has(moduleFileName)) {
+			this.modules.add(moduleFileName);
+		}
+	}
+
+	async saveProjectFile() {
+		let content = `'${this.getCurrentTimestamp()}\n`;
+		content += `ProjectBegin\n`;
+		content += `ProjectName="${this.projectName}"\n`;
+		content += `ProjectStart="${this.projectStart}"\n`;
+
+		this.modules.forEach(module => {
+			content += `ProjectSource="${module}"\n`;
+		});
+		content += `ProjectEnd\n`;
+
+		try {
+			await fs.writeFile(this.filePath, content, 'utf8');
+			console.log(chalk.blue('Project.gpr 파일이 성공적으로 저장되었습니다.'));
+		} catch (err) {
+			console.error(chalk.red('Project.gpr 파일 저장 중 오류가 발생했습니다:'), err);
+		}
 	}
 }
