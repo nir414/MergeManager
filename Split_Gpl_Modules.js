@@ -1,5 +1,11 @@
 // Node.js 기반으로 Brooks Automation GPL 통합 코드를 모듈별로 분류하거나 통합하는 프로그램
 
+
+  // ___ ___ _____ _   _ ___ 
+ // / __| __|_   _| | | | _ \
+ // \__ \ _|  | | | |_| |  _/
+ // |___/___| |_|  \___/|_|  
+
 const fs = require('fs').promises; // 파일 시스템 모듈 불러오기 (Promise 사용)
 const path = require('path'); // 파일 경로 모듈 불러오기
 const readline = require('readline'); // 사용자 입력을 받기 위한 모듈
@@ -11,6 +17,14 @@ const rl = readline.createInterface({
 	output: process.stdout
 });
 
+
+
+  // __  __   _   ___ _  _ 
+ // |  \/  | /_\ |_ _| \| |
+ // | |\/| |/ _ \ | || .` |
+ // |_|  |_/_/ \_\___|_|\_|
+
+displayMenu();
 // 프로그램 시작 메뉴 출력 및 작업 선택 함수
 function displayMenu() {
 	console.log(chalk.blue.bold('\n======================================'));
@@ -41,8 +55,6 @@ function displayMenu() {
 	});
 }
 
-displayMenu();
-
 // 프로그램 종료 대기 함수
 function exitProgram() {
 	rl.question(chalk.cyan('아무 키나 눌러 프로그램을 종료하십시오.'), () => {
@@ -51,37 +63,6 @@ function exitProgram() {
 	});
 }
 
-// 현재 디렉토리에서 .gpl 파일 목록 검색 함수
-async function listGplFiles() {
-	const files = await fs.readdir(__dirname); // 현재 디렉토리에서 파일 목록 가져오기
-	return files.filter(file => file.endsWith('.gpl')); // .gpl 파일만 필터링하여 반환
-}
-
-// 파일 선택을 위한 사용자 프롬프트
-async function promptFileSelection() {
-	const gplFiles = await listGplFiles();
-
-	if (gplFiles.length === 0) {
-		console.log(chalk.red('.gpl 파일이 현재 디렉토리에 없습니다.'));
-		process.exit(1);
-	}
-
-	console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
-	gplFiles.forEach((file, index) => {
-		console.log(chalk.yellow(`${index + 1}: ${file}`));
-	});
-
-	return new Promise((resolve) => {
-		rl.question(chalk.cyan('\n사용할 파일 번호를 선택하세요: '), (answer) => {
-			const index = parseInt(answer) - 1;
-			if (isNaN(index) || index < 0 || index >= gplFiles.length) {
-				console.log(chalk.red('유효하지 않은 선택입니다.'));
-				process.exit(1);
-			}
-			resolve(gplFiles[index]);
-		});
-	});
-}
 
 // 통합 코드를 모듈별로 분류하는 함수
 async function splitModules() {
@@ -204,6 +185,43 @@ async function mergeModules() {
 }
 
 
+
+// 파일 선택을 위한 사용자 프롬프트
+async function promptFileSelection() {
+	const files = await fs.readdir(__dirname); // 현재 디렉토리에서 파일 목록 가져오기
+	const gplFiles = files.filter(file => file.endsWith('.gpl')); // .gpl 파일만 필터링하여 반환
+	
+
+	if (gplFiles.length === 0) {
+		console.log(chalk.red('.gpl 파일이 현재 디렉토리에 없습니다.'));
+		process.exit(1);
+	}
+
+	console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
+	gplFiles.forEach((file, index) => {
+		console.log(chalk.yellow(`${index + 1}: ${file}`));
+	});
+
+	return new Promise((resolve) => {
+		rl.question(chalk.cyan('\n사용할 파일 번호를 선택하세요: '), (answer) => {
+			const index = parseInt(answer) - 1;
+			if (isNaN(index) || index < 0 || index >= gplFiles.length) {
+				console.log(chalk.red('유효하지 않은 선택입니다.'));
+				process.exit(1);
+			}
+			resolve(gplFiles[index]);
+		});
+	});
+}
+
+
+
+        // __                   ____               _           __                   
+  // _____/ /___ ___________   / __ \_________    (_)__  _____/ /_ ____ _____  _____
+ // / ___/ / __ `/ ___/ ___/  / /_/ / ___/ __ \  / / _ \/ ___/ __// __ `/ __ \/ ___/
+// / /__/ / /_/ (__  |__  )  / ____/ /  / /_/ / / /  __/ /__/ /__/ /_/ / /_/ / /    
+// \___/_/\__,_/____/____/  /_/   /_/   \____/_/ /\___/\___/\__(_)__, / .___/_/     
+                                         // /___/               /____/_/            
 class ProjectFileManager {
 	constructor(filePath, projectName = 'MergeCode', projectStart = 'MAIN') {
 		this.filePath = filePath;
