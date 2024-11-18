@@ -17,6 +17,22 @@ const rl = readline.createInterface({
 	output: process.stdout
 });
 
+// readline.question을 Promise로 래핑
+function askQuestion(query) {
+	return new Promise((resolve) => {
+		rl.question(query, (answer) => {
+			resolve(answer);
+		});
+	});
+}
+
+// 프로그램 종료 대기 함수
+function exitProgram() {
+	rl.question(chalk.cyan('아무 키나 눌러 프로그램을 종료하십시오.'), () => {
+		rl.close();
+		process.exit(0);
+	});
+}
 
 
 
@@ -60,9 +76,23 @@ async function debugLogWithPause(message, data = null) {
  // | |\/| |/ _ \ | || .` |
  // |_|  |_/_/ \_\___|_|\_|
 
-displayMenu();
+// 프로그램의 진입점
+(async function main() {
+	try {
+		await displayMenu();
+	} catch (err) {
+		if (err.message === 'Program terminated by user') {
+			console.log(chalk.red('프로그램이 종료되었습니다.'));
+			exitProgram()
+		} else {
+			console.error(chalk.red('예기치 못한 오류가 발생했습니다:'), err);
+			exitProgram()
+		}
+	}
+})();
+
 // 프로그램 시작 메뉴 출력 및 작업 선택 함수
-function displayMenu() {
+async function displayMenu() {
 	console.log(chalk.blue.bold('\n======================================'));
 	console.log(chalk.green('Brooks Automation GPL 코드 관리 시스템'));
 	console.log(chalk.blue.bold('======================================'));
@@ -70,33 +100,61 @@ function displayMenu() {
 	console.log(chalk.yellow('2: 모듈 통합'));
 	console.log(chalk.red('0: 종료'));
 	console.log(chalk.blue.bold('=============================\n'));
-	rl.question(chalk.cyan('어떤 작업을 수행하시겠습니까?\n(숫자를 입력하세요): '), async (answer) => {
-		if (answer === '1') {
-			console.log(chalk.green('통합 코드 분류 작업을 시작합니다.'));
-			await splitModules();
-		} else if (answer === '2') {
-			console.log(chalk.green('모듈 통합 작업을 시작합니다.'));
-			await mergeModules();
-		} else if (answer === '0') {
-			console.log(chalk.red('프로그램을 종료합니다.'));
-			exitProgram();
-			return;
-		} else {
-			console.log(chalk.red('잘못된 입력입니다. 다시 시도해주세요.'));
-			displayMenu();
-			return;
-		}
-		displayMenu();
-		// waitForExit();
-	});
+	const answer = await askQuestion(chalk.cyan('어떤 작업을 수행하시겠습니까?\n(숫자를 입력하세요): '));
+	if (answer === '1') {
+		console.log(chalk.green('통합 코드 분류 작업을 시작합니다.'));
+		await splitModules();
+	} else if (answer === '2') {
+		console.log(chalk.green('모듈 통합 작업을 시작합니다.'));
+		await mergeModules();
+	} else if (answer === '0') {
+		console.log(chalk.red('프로그램을 종료합니다.'));
+		throw new Error('Program terminated by user');
+		// exitProgram();
+		return;
+	} else {
+		console.log(chalk.red('잘못된 입력입니다. 다시 시도해주세요.'));
+		await displayMenu();
+		return;
+	}
+	await displayMenu();
+	// waitForExit();
 }
 
-// 프로그램 종료 대기 함수
-function exitProgram() {
-	rl.question(chalk.cyan('아무 키나 눌러 프로그램을 종료하십시오.'), () => {
-		rl.close();
-		process.exit(0);
-	});
+// 디렉토리 확인 및 생성
+async function ensureDirectoryExists(directory) {
+	try {
+		// 디렉토리가 없으면 생성
+		if (!await fs.access(directory).then(() => true).catch(() => false)) {
+			await fs.mkdir(directory);
+		}
+	} catch (err) {
+		console.error(chalk.red(`Failed to create directory: ${directory}`), err);
+		throw err; // 에러 발생 시 상위로 전달
+	}
+}
+
+// 안전한 파일 읽기
+async function readFileSafe(filePath, encoding = 'utf8') {
+	try {
+		return await fs.readFile(filePath, encoding); // 파일 읽기
+	} catch (err) {
+		if (err.code !== 'ENOENT') {
+			console.error(chalk.red(`Error reading file: ${filePath}`), err);
+			throw err; // 예상치 못한 에러 처리
+		}
+		return null; // 파일이 없으면 null 반환
+	}
+}
+
+// 안전한 파일 쓰기
+async function writeFileSafe(filePath, content) {
+	try {
+		await fs.writeFile(filePath, content, 'utf8'); // 파일 쓰기
+	} catch (err) {
+		console.error(chalk.red(`Error writing file: ${filePath}`), err);
+		throw err; // 에러 발생 시 상위로 전달
+	}
 }
 
 
@@ -224,34 +282,34 @@ async function mergeModules() {
 
 
 
-// 파일 선택을 위한 사용자 프롬프트
+// 파일 선택 프롬프트
 async function promptFileSelection() {
-	// const files = await fs.readdir(path, __dirname); // 현재 디렉토리에서 파일 목록 가져오기
 	const files = await fs.readdir(process.cwd()); // 현재 작업 디렉토리에서 파일 목록 가져오기
 	const gplFiles = files.filter(file => file.endsWith('.gpl')); // .gpl 파일만 필터링하여 반환
-	
 
 	if (gplFiles.length === 0) {
 		console.log(chalk.red('.gpl 파일이 현재 디렉토리에 없습니다.'));
 		exitProgram();
-	} else {
-		console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
-		gplFiles.forEach((file, index) => {
-			console.log(chalk.yellow(`${index + 1}: ${file}`));
-		});
 	}
 
-	return new Promise((resolve) => {
-		rl.question(chalk.cyan('\n사용할 파일 번호를 선택하세요: '), (answer) => {
-			const index = parseInt(answer) - 1;
-			if (isNaN(index) || index < 0 || index >= gplFiles.length) {
-				console.log(chalk.red('유효하지 않은 선택입니다.'));
-				exitProgram();
-			} else {
-				resolve(path.join(process.cwd(), gplFiles[index]));
-			}
-		});
+	// 파일 목록 출력
+	console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
+	gplFiles.forEach((file, index) => {
+		console.log(chalk.yellow(`${index + 1}: ${file}`));
 	});
+
+	// 사용자로부터 파일 번호 입력받기
+	const answer = await new Promise((resolve) => {
+		rl.question(chalk.cyan('사용할 파일 번호를 선택하세요: '), resolve);
+	});
+
+	const index = parseInt(answer) - 1; // 입력값을 인덱스로 변환
+	if (isNaN(index) || index < 0 || index >= gplFiles.length) {
+		console.log(chalk.red('유효하지 않은 선택입니다.'));
+		await displayMenu();
+		// throw new Error('Program terminated by user');
+	}
+	return path.join(process.cwd(), gplFiles[index]); // 선택한 파일 경로 반환
 }
 
 
