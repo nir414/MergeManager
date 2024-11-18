@@ -26,33 +26,30 @@ const rl = readline.createInterface({
 // (____/(____)(____/\____/ \___/
 
 let isDebugMode = true; // 디버깅 모드 플래그
-// 디버깅 로그 함수 (가독성 개선)
+
+// 디버깅 및 로깅 관련 함수
 async function debugLogWithPause(message, data = null) {
-    if (!isDebugMode) {
-        return; // 디버깅 모드가 비활성화된 경우 아무 작업도 하지 않음
-    }
+	if (!isDebugMode) return;
 
-    const timestamp = new Date().toISOString();
+	const timestamp = new Date().toISOString();
 
-    // 줄 번호 가져오기 (스택 추적)
-    const stack = new Error().stack;
-    const callerLine = stack.split('\n')[2]; // 호출자의 스택 정보
-    const lineInfo = callerLine.trim().replace(/.*\((.*)\)/, '$1'); // 줄 번호와 파일 경로 추출
+	// 줄 번호 가져오기 (스택 추적)
+	const stack = new Error().stack;
+	const callerLine = stack.split('\n')[2]; // 호출자의 스택 정보
+	const lineInfo = callerLine.trim().replace(/.*\((.*)\)/, '$1'); // 줄 번호와 파일 경로 추출
 
-    console.log(chalk.cyan.bold(`\n[DEBUG - ${timestamp}]`));
-    console.log(chalk.yellow.bold(`Message:`), message);
-    if (data !== null) {
-        console.log(chalk.green.bold(`Data:`), data);
-    }
-    console.log(chalk.blue.bold(`Location:`), lineInfo);
-    console.log(chalk.magenta.bold('Press ENTER to continue...'));
+	console.log(chalk.cyan.bold(`\n[DEBUG - ${timestamp}]`));
+	console.log(chalk.yellow.bold(`Message:`), message);
+	if (data !== null) {
+		console.log(chalk.green.bold(`Data:`), data);
+	}
+	console.log(chalk.blue.bold(`Location:`), lineInfo);
+	console.log(chalk.magenta.bold('Press ENTER to continue...'));
 
-    // ENTER 키 대기
-    return new Promise((resolve) => {
-        rl.question('', () => {
-            resolve(); // ENTER 입력 시 진행
-        });
-    });
+	// ENTER 키 대기
+	return new Promise((resolve) => {
+		rl.question('', () => resolve());
+	});
 }
 
 

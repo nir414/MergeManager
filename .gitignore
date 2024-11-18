@@ -2,3 +2,7 @@
 /SplitGplModules
 /MergeCode
 /MergeCode
+__init__IOConfig__.gpl
+__init__RobotConfig__.gpl
+MergeCode/Project.gpr
+MergeCode/Project.gpr
