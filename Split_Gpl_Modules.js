@@ -83,7 +83,7 @@ async function splitModules() {
 		}
 	} catch (err) {
 		console.error(chalk.red('출력 폴더를 생성하는 도중 오류가 발생했습니다:'), err);
-		process.exit(1);
+		exitProgram();
 	}
 
 	// 파일 읽기 및 모듈 분리
@@ -124,7 +124,8 @@ async function splitModules() {
 // 분리된 모듈 파일을 하나의 MergeCode 파일로 통합하는 함수
 async function mergeModules() {
 	const outputDirectory = './SplitGplModules';
-	const projectFilePath = './SplitGplModules/Project.gpr';
+	// const projectFilePath = './SplitGplModules/Project.gpr';
+	const projectFilePath = path.join(outputDirectory, 'Project.gpr');
 	const mergeOutputDirectory = './MergeCode';
 	const mergedFilePath = path.join(mergeOutputDirectory, 'MergeCode.gpl');
 	const mergedProjectFilePath = path.join(mergeOutputDirectory, 'Project.gpr');
@@ -136,7 +137,7 @@ async function mergeModules() {
 		}
 	} catch (err) {
 		console.error(chalk.red('MergeCode 폴더를 생성하는 도중 오류가 발생했습니다:'), err);
-		process.exit(1);
+		exitProgram();
 	}
 
 	// Project.gpr 파일 읽기 및 모듈 통합
@@ -154,11 +155,12 @@ async function mergeModules() {
 					const moduleData = await fs.readFile(moduleFilePath, 'utf8');
 					mergedFileContent += moduleData + '\r\n';
 				} catch (readErr) {
-					if (moduleFileName == '__init__IOConfig__.gpl' || moduleFileName == '__init__RobotConfig__.gpl') {
-						console.warn(chalk.yellow(`${moduleFileName} 모듈 파일을 찾을 수 없어 무시합니다.`));
-					} else {
-						console.error(chalk.red(`${moduleFileName} 모듈 파일을 읽는 도중 오류가 발생했습니다:`), readErr);
-					}
+					console.error(chalk.red(`${moduleFileName} 모듈 파일을 읽는 도중 오류가 발생했습니다:`), readErr);
+					// if (moduleFileName == '__init__IOConfig__.gpl' || moduleFileName == '__init__RobotConfig__.gpl') {
+						// console.warn(chalk.yellow(`${moduleFileName} 모듈 파일을 찾을 수 없어 무시합니다.`));
+					// } else {
+						// console.error(chalk.red(`${moduleFileName} 모듈 파일을 읽는 도중 오류가 발생했습니다:`), readErr);
+					// }
 				}
 			}
 		}
@@ -172,7 +174,7 @@ async function mergeModules() {
 		}
 
 		// Project.gpr 파일 생성 (항상 동일한 형식 사용, 시간만 변경)
-		const fixedProjectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\r\nProjectBegin\r\nProjectName="MergeCode"\r\nProjectStart="MAIN"\r\nProjectSource="MergeCode.gpl"\r\nProjectSource="__init__IOConfig__.gpl"\r\nProjectSource="__init__RobotConfig__.gpl"\r\nProjectEnd\r\n`;
+		const fixedProjectFileContent = `'${new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\r\nProjectBegin\r\nProjectName="MergeCode"\r\nProjectStart="MAIN"\r\nProjectSource="MergeCode.gpl"\r\nProjectEnd\r\n`;
 		try {
 			await fs.writeFile(mergedProjectFilePath, fixedProjectFileContent, 'utf8');
 			console.log(chalk.blue('Project.gpr 파일이 성공적으로 생성되었습니다.'));
@@ -188,28 +190,30 @@ async function mergeModules() {
 
 // 파일 선택을 위한 사용자 프롬프트
 async function promptFileSelection() {
-	const files = await fs.readdir(__dirname); // 현재 디렉토리에서 파일 목록 가져오기
+	// const files = await fs.readdir(path, __dirname); // 현재 디렉토리에서 파일 목록 가져오기
+	const files = await fs.readdir(process.cwd()); // 현재 작업 디렉토리에서 파일 목록 가져오기
 	const gplFiles = files.filter(file => file.endsWith('.gpl')); // .gpl 파일만 필터링하여 반환
 	
 
 	if (gplFiles.length === 0) {
 		console.log(chalk.red('.gpl 파일이 현재 디렉토리에 없습니다.'));
-		process.exit(1);
+		exitProgram();
+	} else {
+		console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
+		gplFiles.forEach((file, index) => {
+			console.log(chalk.yellow(`${index + 1}: ${file}`));
+		});
 	}
-
-	console.log(chalk.blue('\n현재 디렉토리에서 찾은 .gpl 파일 목록:'));
-	gplFiles.forEach((file, index) => {
-		console.log(chalk.yellow(`${index + 1}: ${file}`));
-	});
 
 	return new Promise((resolve) => {
 		rl.question(chalk.cyan('\n사용할 파일 번호를 선택하세요: '), (answer) => {
 			const index = parseInt(answer) - 1;
 			if (isNaN(index) || index < 0 || index >= gplFiles.length) {
 				console.log(chalk.red('유효하지 않은 선택입니다.'));
-				process.exit(1);
+				exitProgram();
+			} else {
+				resolve(path.join(process.cwd(), gplFiles[index]));
 			}
-			resolve(gplFiles[index]);
 		});
 	});
 }
