@@ -19,6 +19,45 @@ const rl = readline.createInterface({
 
 
 
+
+ // ____  ____  ____  _  _   ___ 
+// (    \(  __)(  _ \/ )( \ / __)
+ // ) D ( ) _)  ) _ () \/ (( (_ \
+// (____/(____)(____/\____/ \___/
+
+let isDebugMode = true; // 디버깅 모드 플래그
+// 디버깅 로그 함수 (가독성 개선)
+async function debugLogWithPause(message, data = null) {
+    if (!isDebugMode) {
+        return; // 디버깅 모드가 비활성화된 경우 아무 작업도 하지 않음
+    }
+
+    const timestamp = new Date().toISOString();
+
+    // 줄 번호 가져오기 (스택 추적)
+    const stack = new Error().stack;
+    const callerLine = stack.split('\n')[2]; // 호출자의 스택 정보
+    const lineInfo = callerLine.trim().replace(/.*\((.*)\)/, '$1'); // 줄 번호와 파일 경로 추출
+
+    console.log(chalk.cyan.bold(`\n[DEBUG - ${timestamp}]`));
+    console.log(chalk.yellow.bold(`Message:`), message);
+    if (data !== null) {
+        console.log(chalk.green.bold(`Data:`), data);
+    }
+    console.log(chalk.blue.bold(`Location:`), lineInfo);
+    console.log(chalk.magenta.bold('Press ENTER to continue...'));
+
+    // ENTER 키 대기
+    return new Promise((resolve) => {
+        rl.question('', () => {
+            resolve(); // ENTER 입력 시 진행
+        });
+    });
+}
+
+
+
+
   // __  __   _   ___ _  _ 
  // |  \/  | /_\ |_ _| \| |
  // | |\/| |/ _ \ | || .` |
@@ -250,10 +289,18 @@ class ProjectFileManager {
 		try {
 			const data = await fs.readFile(this.filePath, 'utf8');
 			const moduleMatches = data.match(/ProjectSource="(.+?\.gpl)"/g) || [];
-			moduleMatches.forEach(match => {
+			// await moduleMatches.forEach(async match => {
+				// const moduleName = match.match(/ProjectSource="(.+?)"/)[1];
+				// debugLogWithPause('debug: match.match(/ProjectSource="(.+?)"/)[1]', match.match(/ProjectSource="(.+?)"/)[1]);
+
+				// this.modules.add(moduleName);
+			// });
+			
+			for (const match of moduleMatches) {
 				const moduleName = match.match(/ProjectSource="(.+?)"/)[1];
+				// await debugLogWithPause('match.match(/ProjectSource="(.+?)"/)[1]', moduleName);
 				this.modules.add(moduleName);
-			});
+			} 
 		} catch (err) {
 			if (err.code !== 'ENOENT') {
 				console.error(chalk.red('Project.gpr 파일을 읽는 도중 오류가 발생했습니다:'), err);
@@ -288,3 +335,4 @@ class ProjectFileManager {
 		}
 	}
 }
+

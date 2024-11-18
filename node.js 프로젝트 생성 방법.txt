@@ -6,6 +6,15 @@ mkdir poject_name
 cd poject_name
 npm init -y
 
+
+TypeScript 설치
+npm install -g typescript ts-node
+TypeScript 초기화
+tsc --init
+필요한 모듈 설치
+npm install chalk readline @types/node
+
+
 chalk 설치(텍스트의 스타일)
 npm install chalk
 npm install chalk@4
@@ -34,8 +43,12 @@ mkdir javaScript
 cd javaScript
 
 
+
 빌드 방법
 (관리자 권한 필요)
+빌드툴 설치
+npm install -g pkg
+
 pkg . --targets node18-win-x64
 pkg . --targets node16-win-x64
 pkg . --targets node18-win-x64 --no-bytecode
