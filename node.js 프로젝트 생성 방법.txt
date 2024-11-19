@@ -9,8 +9,6 @@ npm init -y
 
 TypeScript 설치
 npm install -g typescript ts-node
-TypeScript 초기화
-tsc --init
 필요한 모듈 설치
 npm install chalk readline @types/node
 
@@ -54,5 +52,48 @@ pkg . --targets node16-win-x64
 pkg . --targets node18-win-x64 --no-bytecode
 pkg . --targets node16-win-x64 --no-bytecode
 
+
+
+
 아이콘 지정
 pkg . --targets node18-win-x64 --output output_filename --icon icon.ico
+
+
+
+사용 중인 종속성(chalk, readline 등) 외에 추가적인 모듈이 없는지 확인합니다
+npm ls --depth=0
+꼭 필요한 모듈만 남기고 제거
+npm uninstall <module-name>
+
+코드 번들링(단일 파일)
+npm install -g esbuild
+esbuild app.js --bundle --minify --platform=node --outfile=dist/app.js
+
+최적화된 빌드
+export NODE_ENV=production
+
+pkg 사용: pkg를 사용하여 실행 파일을 빌드할 때 최적화 옵션
+pkg app.js --targets node16-win-x64 --compress GZip
+
+코드 난독화 및 압축
+npm install -g terser
+terser app.js -c -m -o app.min.js
+
+코드 번들링(esbuild)
+npm install esbuild --save-dev
+npx esbuild Split_Gpl_Modules.js --bundle --minify --platform=node --outfile=dist/app.js
+
+빌드(pkg)
+npm install -g pkg
+pkg dist/app.js --output dist/app --targets node16-win-x64
+pkg dist/app.js --output dist/app --targets node16-win-x64 --compress Brotli
+
+빌드(nexe)
+npm install -g nexe
+nexe dist/app.js -o dist/app
+
+압축
+upx --best dist/app.exe
+
+
+
