@@ -285,7 +285,7 @@ async function mergeModules() {
 // 파일 선택 프롬프트
 async function promptFileSelection() {
 	const files = await fs.readdir(process.cwd()); // 현재 작업 디렉토리에서 파일 목록 가져오기
-	const gplFiles = files.filter(file => file.endsWith('.gpl')); // .gpl 파일만 필터링하여 반환
+	const gplFiles = files.filter(file => file.toLowerCase().endsWith('.gpl')); // 대소문자를 무시하고 .gpl 필터링
 
 	if (gplFiles.length === 0) {
 		console.log(chalk.red('.gpl 파일이 현재 디렉토리에 없습니다.'));
