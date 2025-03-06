@@ -183,7 +183,10 @@ async function splitModules() {
 	// 파일 읽기 및 모듈 분리
 	try {
 		const data = await fs.readFile(inputFilePath, 'utf8');
-		const moduleRegex = /((?:'[^\n]*\n)+)?(Module \w+[\s\S]*?End Module)/g;
+		const moduleRegex = /((?:[ \t]*'[^\r\n]*(?:\r?\n)+)+)?(Module \w+[\s\S]*?End Module)/g;
+		// const moduleRegex = /((?:'[^\n]*\n)+)?(Module \w+[\s\S]*?End Module)/g;
+		// const moduleRegex = /((?:'\s?.*(?:\r?\n)+)+)?(Module\s+\w+[\s\S]*?End\s+Module)/g;
+
 
 		let match;
 		
