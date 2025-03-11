@@ -160,32 +160,45 @@ async function writeFileSafe(filePath, content) {
 
 // 통합 코드를 모듈별로 분류하는 함수
 async function splitModules() {
-	// const inputFilePath = './MergeCode.gpl';
-	const inputFilePath = await promptFileSelection();
-	const outputDirectory = './SplitGplModules';
-	// const projectFilePath = './SplitGplModules/Project.gpr';
-	const projectFilePath = path.join(outputDirectory, 'Project.gpr');
+  // 1) 사용자에게 'MergeCode.gpl' 선택받기
+  const inputFilePath = await promptFileSelection();
+  
+  // 2) 원본 'MergeCode.gpl' 있는 폴더 경로
+  const inputDir = path.dirname(inputFilePath);
+  // => 예: /Users/username/myProject (상대경로일 수도 있음)
+  
+  // 3) 원본 폴더의 Project.gpr 경로
+  //    (실제로 있는지 없는지는 loadProjectFile() 할 때 검사)
+  const existingProjectFilePath = path.join(inputDir, 'Project.gpr');
+  
+  // 4) "결과물"을 저장할 폴더 & Project.gpr 경로
+  const outputDirectory = './SplitGplModules'; // 그대로 사용
+  const resultProjectFilePath = path.join(outputDirectory, 'Project.gpr');
 
-
-	// ProjectFileManager 인스턴스 생성 및 파일 로드
-	const projectManager = new ProjectFileManager(projectFilePath);
-	await projectManager.loadProjectFile();
-	// 출력 폴더 생성 (이미 존재하면 무시)
+  // 5) ProjectFileManager를 생성할 때, 일단 "기존" 위치를 filePath로 준다
+  const projectManager = new ProjectFileManager(existingProjectFilePath);
+  // => loadProjectFile()에서 "inputDir/Project.gpr" 불러옴(없으면 새로 만든다고 안내)
+  
+  // 6) 불러오기
+  await projectManager.loadProjectFile();
+  
+  // 7) 이제 filePath를 "결과"로 바꿔치기:
+  projectManager.filePath = resultProjectFilePath;
+  
+  // 8) 출력 폴더가 없으면 생성
 	try {
 		if (!await fs.access(outputDirectory).then(() => true).catch(() => false)) {
 			await fs.mkdir(outputDirectory); // 폴더 생성
 		}
 	} catch (err) {
-		console.error(chalk.red('출력 폴더를 생성하는 도중 오류가 발생했습니다:'), err);
+		console.error(chalk.red('출력 폴더 생성 중 오류:'), err);
 		exitProgram();
 	}
 
-	// 파일 읽기 및 모듈 분리
+  // 9) 모듈 분리 작업
 	try {
 		const data = await fs.readFile(inputFilePath, 'utf8');
 		const moduleRegex = /((?:[ \t]*'[^\r\n]*(?:\r?\n)+)+)?(Module \w+[\s\S]*?End Module)/g;
-		// const moduleRegex = /((?:'[^\n]*\n)+)?(Module \w+[\s\S]*?End Module)/g;
-		// const moduleRegex = /((?:'\s?.*(?:\r?\n)+)+)?(Module\s+\w+[\s\S]*?End\s+Module)/g;
 
 
 		let match;
@@ -202,17 +215,21 @@ async function splitModules() {
 			const moduleName = moduleNameMatch ? moduleNameMatch[1] : 'UnknownModule';
 			const moduleFileName = `${moduleName}.gpl`;
 			
-			// 모듈별 파일 생성
+      // 모듈파일을 outputDirectory에 생성
 			const outputFilePath = path.join(outputDirectory, moduleFileName);
-			try {
-				await fs.writeFile(outputFilePath, fullContent.replace(/\r?\n/g, '\r\n') + '\r\n\r\n', 'utf8');
-				console.log(chalk.green(`${moduleName} 모듈 파일이 성공적으로 생성되었습니다.`));
-				projectManager.addModule(moduleFileName);
-			} catch (writeErr) {
-				console.error(chalk.red(`${moduleName} 모듈 파일을 생성하는 도중 오류가 발생했습니다:`), writeErr);
-			}
+      await fs.writeFile(
+        outputFilePath,
+        fullContent.replace(/\r?\n/g, '\r\n') + '\r\n\r\n',
+        'utf8'
+      );
+      console.log(chalk.green(`${moduleName} 모듈 파일 생성 완료.`));
+      
+      // 프로젝트 매니저에도 등록
+      projectManager.addModule(moduleFileName);
 		}
-		await projectManager.saveProjectFile();
+    // 10) 최종 Project.gpr 저장
+    await projectManager.saveProjectFile();
+    console.log(chalk.cyan(`새 Project.gpr가 ${resultProjectFilePath} 에 만들어졌습니다!`));
 	} catch (err) {
 		console.error(chalk.red('파일을 읽는 도중 오류가 발생했습니다:'), err);
 	}
@@ -345,8 +362,25 @@ class ProjectFileManager {
 
 	async loadProjectFile() {
 		try {
+      // 기존 Project.gpr 파일 읽어오기
 			const data = await fs.readFile(this.filePath, 'utf8');
+			
+      // (1) ProjectName="..." 찾기
+      const nameMatch = data.match(/ProjectName="(.+?)"/);
+      if (nameMatch) {
+        this.projectName = nameMatch[1];
+      }
+
+      // (2) ProjectStart="..." 찾기
+      const startMatch = data.match(/ProjectStart="(.+?)"/);
+      if (startMatch) {
+        this.projectStart = startMatch[1];
+      }
+
+      // (3) ProjectSource="..." 찾기 → modules에 추가
 			const moduleMatches = data.match(/ProjectSource="(.+?\.gpl)"/g) || [];
+			
+			
 			// await moduleMatches.forEach(async match => {
 				// const moduleName = match.match(/ProjectSource="(.+?)"/)[1];
 				// debugLogWithPause('debug: match.match(/ProjectSource="(.+?)"/)[1]', match.match(/ProjectSource="(.+?)"/)[1]);
@@ -359,7 +393,9 @@ class ProjectFileManager {
 				// await debugLogWithPause('match.match(/ProjectSource="(.+?)"/)[1]', moduleName);
 				this.modules.add(moduleName);
 			} 
+			console.log(chalk.yellow(`기존 Project.gpr 정보를 불러왔습니다.\n- ProjectName: ${this.projectName}\n- ProjectStart: ${this.projectStart}\n- Modules:`, [...this.modules]));
 		} catch (err) {
+      // (4) 파일이 없는 경우: 기본값 사용 + 새로 생성 예정
 			if (err.code !== 'ENOENT') {
 				console.error(chalk.red('Project.gpr 파일을 읽는 도중 오류가 발생했습니다:'), err);
 				throw err;
@@ -379,7 +415,8 @@ class ProjectFileManager {
 		content += `ProjectBegin\n`;
 		content += `ProjectName="${this.projectName}"\n`;
 		content += `ProjectStart="${this.projectStart}"\n`;
-
+		
+    // modules를 순회하며 ProjectSource="..." 행을 추가
 		this.modules.forEach(module => {
 			content += `ProjectSource="${module}"\n`;
 		});
@@ -387,7 +424,7 @@ class ProjectFileManager {
 
 		try {
 			await fs.writeFile(this.filePath, content, 'utf8');
-			console.log(chalk.blue('Project.gpr 파일이 성공적으로 저장되었습니다.'));
+			console.log(chalk.blue('Project.gpr 파일이 성공적으로 저장되었습니다. (경로: ${this.filePath})'));
 		} catch (err) {
 			console.error(chalk.red('Project.gpr 파일 저장 중 오류가 발생했습니다:'), err);
 		}
