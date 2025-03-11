@@ -16,12 +16,14 @@
     "chalk": "^4.1.2"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.24.0",
+    "pkg": "^5.8.1"
   },
   "description": "이 저장소는 Brooks Automation GPL 코드를 관리하기 위한 Node.js 기반 프로그램을 포함하고 있습니다. 이 시스템은 통합 코드를 개별 모듈로 분리하거나, 분리된 모듈들을 다시 통합된 형식으로 합치는 두 가지 주요 기능을 제공합니다. 프로그램은 터미널에서 사용자가 친숙하게 사용할 수 있도록 대화형 메뉴를 제공합니다.",
   "main": "GPT가 정리함.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-win": "pkg . --targets node16-win-x64 --output dist/mergemanager-win.exe"
   },
   "keywords": [],
   "author": "",
