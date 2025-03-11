@@ -172,7 +172,7 @@ async function splitModules() {
 	const existingProjectFilePath = path.join(inputDir, 'Project.gpr');
 	
 	// 4) "결과물"을 저장할 폴더 & Project.gpr 경로
-	const outputDirectory = './SplitGplModules'; // 그대로 사용
+	const outputDirectory = './SplitGplModules';
 	const resultProjectFilePath = path.join(outputDirectory, 'Project.gpr');
 
 	// 5) ProjectFileManager를 생성할 때, 일단 "기존" 위치를 filePath로 준다
@@ -181,6 +181,12 @@ async function splitModules() {
 	
 	// 6) 불러오기
 	await projectManager.loadProjectFile();
+
+	// (추가) "출력 폴더" 기준으로, 실제로 없는 모듈을 제거
+	// 만약 "inputDir" 기반으로 지우고 싶다면 아래를 바꾸면 됨.
+	await projectManager.removeMissingModules(outputDirectory);
+
+	// projectFilePath를 결과물 경로로 변경
 	
 	// 7) 이제 filePath를 "결과"로 바꿔치기:
 	projectManager.filePath = resultProjectFilePath;
@@ -215,7 +221,7 @@ async function splitModules() {
 			const moduleName = moduleNameMatch ? moduleNameMatch[1] : 'UnknownModule';
 			const moduleFileName = `${moduleName}.gpl`;
 			
-			// 모듈파일을 outputDirectory에 생성
+			// 분리된 .gpl 파일을 outputDirectory에 저장
 			const outputFilePath = path.join(outputDirectory, moduleFileName);
 			await fs.writeFile(
 				outputFilePath,
@@ -224,7 +230,7 @@ async function splitModules() {
 			);
 			console.log(chalk.green(`${moduleName} 모듈 파일 생성 완료.`));
 			
-			// 프로젝트 매니저에도 등록
+			// ProjectFileManager에도 등록
 			projectManager.addModule(moduleFileName);
 		}
 		// 10) 최종 Project.gpr 저장
@@ -360,6 +366,13 @@ class ProjectFileManager {
 		});
 	}
 
+	/**
+	 * 기존 Project.gpr 파일을 읽어
+	 * - ProjectName
+	 * - ProjectStart
+	 * - ProjectSource="..."
+	 * 등을 this에 반영.
+	 */
 	async loadProjectFile() {
 		try {
 			// 기존 Project.gpr 파일 읽어오기
@@ -380,20 +393,18 @@ class ProjectFileManager {
 			// (3) ProjectSource="..." 찾기 → modules에 추가
 			const moduleMatches = data.match(/ProjectSource="(.+?\.gpl)"/g) || [];
 			
-			
-			// await moduleMatches.forEach(async match => {
-				// const moduleName = match.match(/ProjectSource="(.+?)"/)[1];
-				// debugLogWithPause('debug: match.match(/ProjectSource="(.+?)"/)[1]', match.match(/ProjectSource="(.+?)"/)[1]);
-
-				// this.modules.add(moduleName);
-			// });
-			
 			for (const match of moduleMatches) {
 				const moduleName = match.match(/ProjectSource="(.+?)"/)[1];
 				// await debugLogWithPause('match.match(/ProjectSource="(.+?)"/)[1]', moduleName);
 				this.modules.add(moduleName);
 			} 
-			console.log(chalk.yellow(`기존 Project.gpr 정보를 불러왔습니다.\n- ProjectName: ${this.projectName}\n- ProjectStart: ${this.projectStart}\n- Modules:`, [...this.modules]));
+			console.log(chalk.yellow(`기존 Project.gpr 정보를 불러왔습니다.\n- ProjectName: ${this.projectName}\n- ProjectStart: ${this.projectStart}\n- Modules: ${[...this.modules]}`));
+			console.log(chalk.yellow(
+				`기존 Project.gpr 정보를 불러왔습니다.\n` +
+				`- ProjectName: ${this.projectName}\n` +
+				`- ProjectStart: ${this.projectStart}\n` +
+				`- Modules: ${[...this.modules]}`
+			));
 		} catch (err) {
 			// (4) 파일이 없는 경우: 기본값 사용 + 새로 생성 예정
 			if (err.code !== 'ENOENT') {
@@ -404,12 +415,36 @@ class ProjectFileManager {
 		}
 	}
 
+	/**
+	 * 실제 파일이 없는 모듈만 제거
+	 * @param {string} directory 모듈이 존재해야 할 폴더 경로
+	 */
+	async removeMissingModules(directory) {
+		// this.modules에 기록된 모듈 중, directory 안에 실제로 존재하지 않는 .gpl 파일 삭제
+		for (const moduleName of [...this.modules]) {
+			const filePath = path.join(directory, moduleName);
+			// fs.access()로 존재 여부 확인. 없으면 제거.
+			const exists = await fs.access(filePath).then(() => true).catch(() => false);
+			if (!exists) {
+				this.modules.delete(moduleName);
+				console.log(chalk.yellow(`실제 파일이 없어 제거된 모듈: ${moduleName}`));
+			}
+		}
+	}
+
+	/**
+	 * 분리/통합 과정에서 새로 생긴 .gpl 모듈을 등록하는 함수
+	 */
 	addModule(moduleFileName) {
 		if (!this.modules.has(moduleFileName)) {
 			this.modules.add(moduleFileName);
 		}
 	}
 
+	/**
+	 * this.modules, this.projectName, this.projectStart 정보를 기반으로
+	 * Project.gpr 파일을 다시 저장한다.
+	 */
 	async saveProjectFile() {
 		let content = `'${this.getCurrentTimestamp()}\n`;
 		content += `ProjectBegin\n`;
